@@ -79,19 +79,28 @@ def create_all_timeframes_data(symbol: str):
         raise err
 
 
-def read_data(symbol: str, timeframe: str):
+def read_data(symbol: str, timeframe: str, stop: str = ""):
     try:
         # Подключение к InfluxDB
-        client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOCKEN, org=INFLUXDB_ORG, debug=False, timeout=60000)
+        client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOCKEN, org=INFLUXDB_ORG, debug=False, timeout=5000000)
         query_api = client.query_api()
 
         # Запрос в InfluxDB для получения данных в формате DataFrame
-        query= f'''
-        from(bucket: "{INFLUXDB_BUCKET}") 
-        |> range(start: -10000d)
-        |> filter(fn: (r) => r["_measurement"] == "{symbol}_{timeframe}")
-        |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
-        '''
+        if stop == "":
+            query = f'''
+            from(bucket: "{INFLUXDB_BUCKET}") 
+            |> range(start: -inf)
+            |> filter(fn: (r) => r["_measurement"] == "{symbol}_{timeframe}")
+            |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+            '''
+        else: 
+            # Пример stop: 2024-01-03 или 2024-01-03T00:00:00Z
+            query = f'''
+            from(bucket: "{INFLUXDB_BUCKET}") 
+            |> range(start: -inf, stop: {stop})
+            |> filter(fn: (r) => r["_measurement"] == "{symbol}_{timeframe}")
+            |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+            '''
 
         # Получение и обработка данных
         df = query_api.query_data_frame(query)
@@ -107,7 +116,7 @@ def read_data(symbol: str, timeframe: str):
 def delete_all_data():
     try:
         # Подключение к InfluxDB
-        client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOCKEN, org=INFLUXDB_ORG, debug=False, timeout=100000)
+        client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOCKEN, org=INFLUXDB_ORG, debug=False, timeout=5000000)
         delete_api = client.delete_api()
 
         # Удаление всех данных и бакета
@@ -123,7 +132,7 @@ def delete_all_data():
 def delete_measurement(measurement):
     try:
         # Подключение к InfluxDB
-        client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOCKEN, org=INFLUXDB_ORG, debug=False, timeout=100000)
+        client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOCKEN, org=INFLUXDB_ORG, debug=False, timeout=5000000)
         delete_api = client.delete_api()
 
         # Удаление определенного measurement из бакета
@@ -139,7 +148,7 @@ def delete_measurement(measurement):
 def add_caldel_patterns_data(data, symbol: str, timeframe: str):
     try:
         # Подключение к InfluxDB
-        client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOCKEN, org=INFLUXDB_ORG, debug=False, timeout=100000)
+        client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOCKEN, org=INFLUXDB_ORG, debug=False, timeout=50000000)
         write_client = client.write_api(write_options=SYNCHRONOUS)
 
         # Запись данных в InfluxDB
@@ -160,7 +169,7 @@ def add_caldel_patterns_data(data, symbol: str, timeframe: str):
 def query_data(query: str):
     try:
          # Подключение к InfluxDB
-        client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOCKEN, org=INFLUXDB_ORG, debug=False, timeout=100000)
+        client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOCKEN, org=INFLUXDB_ORG, debug=False, timeout=5000000)
         query_api = client.query_api()
 
         # Отправка запроса в БД
@@ -178,7 +187,7 @@ def query_data(query: str):
 def query_df(query: str):
     try:
         # Подключение к InfluxDB
-        client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOCKEN, org=INFLUXDB_ORG, debug=False, timeout=100000)
+        client = InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOCKEN, org=INFLUXDB_ORG, debug=False, timeout=5000000)
         query_api = client.query_api()
 
         # Отправка запроса в БД
